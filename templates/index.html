@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>OCR</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="shortcut icon" href="/static/favicon.png" type="image/x-icon">
+    <script src="https://code.jquery.com/jquery-3.6.0.js"
+        integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous">
+    </script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
+    </script>
+
+    <link rel="stylesheet" href="/static/HoldOn.min.css">
+    <script src="/static//HoldOn.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+        html * {
+            font-family: 'Urbanist' !important;
+        }
+    </style>
+    <script>
+        function blockUI(msg = "Please Wait...") {
+            var options = {
+                theme: "sk-cube-grid",
+                message: msg,
+                backgroundColor: "rgba(0,0,0)",
+                textColor: "white"
+            };
+            HoldOn.open(options);
+        }
+        function unblockUI(){
+            HoldOn.close();
+        }
+    </script>
+</head>
+
+<body>
+    <!-- Image and text -->
+    <nav class="navbar navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">
+            <img src="/static/favicon.png" width="30" height="30" class="d-inline-block align-top" alt="">
+            Python OCR
+        </a>
+    </nav>
+
+    <section class="container mt-5">
+        <div class="card-body w-100 shadow">
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>UPLOAD IMAGE</h3>
+                    <hr>
+                    <div class="form-group text-center border rounded bg-light">
+                        <form action="/doocr" id="form-main" method="post" enctype="multipart/form-data">
+                            <label for="form-img" class="">
+                                <img style="width: 300px;cursor: pointer;"
+                                    src="https://www.freeiconspng.com/uploads/upload-icon-19.png" id="prev-img">
+                            </label>
+                            <input type="file" required name="file" id="form-img" hidden accept="image/*">
+                            <button type="submit" class="btn btn-info btn-block">Submit</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-md-6" id="result-ctr">
+                    <h3>RESULT</h3>
+                    <hr>
+                    <div class="bg-light w-100 p-3" style="max-height: 300px;min-height: 100px;overflow:auto" id="result">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        let defaultImg = "https://www.freeiconspng.com/uploads/upload-icon-19.png"
+        $("#form-img").change(function () {
+            const [file] = this.files
+            if (file) {
+                $("#prev-img").attr("src", URL.createObjectURL(file))
+            }
+        })
+        $("#form-main").submit(function(e){
+            e.preventDefault()
+            let formData = new FormData(this)
+            $.ajax({
+                url: "/doocr",
+                method:"POST",
+                data:formData,
+                contentType:false,
+                processData:false,
+                beforeSend:function(){
+                    $("#result").html("")
+                    $("#result-ctr").find(".alert").each(function(){
+                        $(this).remove()
+                    })
+                    blockUI()
+                }
+            }).done(function(data){
+                unblockUI()
+                console.log(data)
+                if (data.status == 200){
+                    $("#result").html(data.text)
+                    $("#result-ctr").append(
+                        "<div class='alert mt-3 alert-success'><b>"+data.msg+"</b>, elapsed time : ("+data.operation_time+")</div>"
+                    )
+                }else{
+                    $("#result").html("")
+                    $("#result-ctr").append(
+                        "<div class='alert mt-3 alert-danger'>"+data.msg+"</div>"
+                    )
+                }
+            }).fail(function(){
+                unblockUI()
+                $("#result-ctr").append(
+                    "<div class='alert mt-3 alert-danger'>Server error</div>"
+                )  
+            })
+        })
+    </script>
+</body>
+
+</html>
